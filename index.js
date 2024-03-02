@@ -4,6 +4,8 @@ const express = require('express')
 
 const app = express()
 
+let port = process.env.PORT || 8000
+
 app.get('/', (request, response) => {
     let content = ""
 
@@ -42,7 +44,6 @@ app.get('/', (request, response) => {
     response.send(content)
 });
 
-const port = 8000
 app.listen(port, () => {
     console.log(`server running at port ${port}`)
 })
