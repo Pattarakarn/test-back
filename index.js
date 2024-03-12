@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 
 const populationRouter = require('./routes/population')
 const testRouter = require('./routes/test')
+const regionRouter = require('./routes/region')
 
 const app = express()
 app.use(express.json())
@@ -65,9 +66,18 @@ app.get('/', (request, response) => {
     response.send(content)
 });
 
+const multer = require('multer')
+var upload = multer({ dest: './upload/' });
+
+app.post('/tests', upload.single('file'), function (req, res) {
+    console.log(req.file);
+    res.send("file saved on server");
+});
+
 app.use('/', populationRouter)
 app.use('/', testRouter)
+app.use('/', regionRouter)
 
-mongoose.connection.on('error', (err) => {
-    console.error('MongoDB error', err);
-});
+// mongoose.connection.on('error', (err) => {
+//     console.error('MongoDB error', err);
+// });

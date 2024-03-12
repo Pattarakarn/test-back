@@ -1,3 +1,4 @@
+const CountryModel = require("../models/country")
 const PopulationModel = require("../models/population")
 const PopFlagRegionModel = require("../models/populationFlagRegion")
 const RegionModel = require("../models/region")
@@ -72,22 +73,49 @@ exports.getRegionGroup = async (req, res) => {
     res.send(uniqueRegion)
 }
 
+async function retryGetFlag(array) {
+    return await Promise.all(
+        array.map(async (element, i) => {
+            if (!element.region) {
+                const data = await getFlag(element.country)
+                console.log(data?.flag, data?.region, data)
+                element.flag = data?.flag
+                element.region = data?.region
+            }
+            return element
+        })
+    )
+}
+
 exports.createRegion = async (req, res) => {
     const uniqueCountry = await getUniqueCountry()
 
-    await uniqueCountry.map(async element => {
-        try {
-            const data = await getFlag(element.country)
-            console.log(data.flag, data.region, data)
-            element.flag = data.flag
-            element.region = data.region
+    // await uniqueCountry.map(async element => {
+    //     try {
+    //         const data = await getFlag(element.country)
+    //         console.log(data.flag, data.region, data)
+    //         element.flag = data.flag
+    //         element.region = data.region
 
-            if (data) RegionModel.insertMany(element)
-        } catch (err) {
-            console.log(err)
-        }
+    //         if (data) RegionModel.insertMany(element)
+    //     } catch (err) {
+    //         console.log(err)
+    //     }
+    // })
+    const all = await retryGetFlag(uniqueCountry)
 
-    })
+    const exists = await CountryModel.find({ flag: { $exists: true } })
+    const existFlagRegion = all.filter(({ region }) => (region))
+    if (existFlagRegion?.length == exists.length) {
+        // console.log(existFlagRegion?.length, exists.length)
+        RegionModel.insertMany(existFlagRegion)
+    } else {
+        // console.log('retry', existFlagRegion?.length, exists.length)
+        // console.log(all.filter(({ region }) => (!region)).length)
+        const re = await retryGetFlag(all)
+        // console.log(re, re.filter(({ region }) => (!region)).length)
+        RegionModel.insertMany(re)
+    }
     res.end()
 }
 
